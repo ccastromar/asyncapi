@@ -1,0 +1,96 @@
+asyncapi: '2.0.0'
+info:
+  title: Example AsyncAPI Specification
+  version: '1.0.0'
+channels:
+  orderEvents:
+    description: Events related to orders
+    publish:
+      message:
+        $ref: '#/components/messages/OrderEvent'
+components:
+  messages:
+    OrderEvent:
+      name: OrderEvent
+      title: Order Event
+      summary: Represents an order event
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/OrderPayload'
+    OrderRequestedEvent:
+      $ref: '#/components/messages/OrderEvent'
+      summary: Event indicating an order request
+      payload:
+        $ref: '#/components/schemas/OrderRequestedPayload'
+    OrderValidatedEvent:
+      $ref: '#/components/messages/OrderEvent'
+      summary: Event indicating an order has been validated
+      payload:
+        $ref: '#/components/schemas/OrderValidatedPayload'
+    OrderPersistedEvent:
+      $ref: '#/components/messages/OrderEvent'
+      summary: Event indicating an order has been persisted
+      payload:
+        $ref: '#/components/schemas/OrderPersistedPayload'
+  schemas:
+    OrderPayload:
+      type: object
+      properties:
+        orderId:
+          type: string
+          description: Unique identifier for the order
+        customerDetails:
+          $ref: '#/components/schemas/CustomerDetails'
+    OrderRequestedPayload:
+      allOf:
+        - $ref: '#/components/schemas/OrderPayload'
+        - type: object
+          properties:
+            timestamp:
+              type: string
+              format: date-time
+              description: Timestamp when the order was requested
+            status:
+              type: string
+              description: Status of the order request
+    OrderValidatedPayload:
+      allOf:
+        - $ref: '#/components/schemas/OrderPayload'
+        - type: object
+          properties:
+            timestamp:
+              type: string
+              format: date-time
+              description: Timestamp when the order was validated
+            validatorId:
+              type: string
+              description: ID of the validator who validated the order
+    OrderPersistedPayload:
+      allOf:
+        - $ref: '#/components/schemas/OrderPayload'
+        - type: object
+          properties:
+            timestamp:
+              type: string
+              format: date-time
+              description: Timestamp when the order was persisted
+            persistenceId:
+              type: string
+              description: ID of the system where the order was persisted
+    CustomerDetails:
+      type: object
+      properties:
+        customerId:
+          type: string
+          description: Unique identifier for the customer
+        firstName:
+          type: string
+          description: Customer's first name
+        lastName:
+          type: string
+          description: Customer's last name
+        email:
+          type: string
+          format: email
+          description: Customer's email address
+

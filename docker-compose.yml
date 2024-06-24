@@ -1,0 +1,67 @@
+version: '3.8'
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://kafka:29092,OUTSIDE://localhost:9092
+      KAFKA_LISTENERS: INSIDE://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CREATE_TOPICS: "topic1:1:1,topic2:1:1"  # Example topics to create on startup
+    ports:
+      - "9092:9092"
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:latest
+    depends_on:
+      - kafka
+    environment:
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka:29092
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+    ports:
+      - "8081:8081"
+
+  init:
+    image: alpine:latest
+    depends_on:
+      - schema-registry
+    volumes:
+      - ./init.sh:/init.sh
+      - ./asyncapi.yaml:/asyncapi.yaml
+    entrypoint: ["/bin/sh", "-c", "apk add --no-cache bash jq yq curl && /init.sh"]
+
+  kafka-ui:
+    container_name: kafka-ui
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - 8080:8080
+    environment:
+      DYNAMIC_CONFIG_ENABLED: 'true'
+      KAFKA_CLUSTERS: |
+        [
+          {
+            "name": "My Kafka Cluster",
+            "bootstrapServers": "kafka:29092",
+            "schemaRegistryUrl": "http://schema-registry:8081"
+          }
+        ]
+    depends_on:
+      - kafka
+      - schema-registry  
+    volumes:
+      - ./config.yml:/etc/kafkaui/dynamic_config.yaml
+
+networks:
+  default:
+    driver: bridge
